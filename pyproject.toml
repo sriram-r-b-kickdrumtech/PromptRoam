@@ -1,0 +1,40 @@
+[project]
+name = "promptroam"
+version = "0.1.0"
+description = "Autonomous Multi-Agent Travel Planning System"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "streamlit>=1.40.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.27.0",
+    "folium>=0.15.0",
+    "fpdf2>=2.7.0",
+    "chromadb>=0.4.0",
+    "langchain-chroma>=0.1.0",
+    "redis>=5.0.0",
+    "mcp>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.4.0", "pytest>=8.0.0"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "app", "config", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -1,0 +1,24 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Hotel API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://hotel-api6.p.rapidapi.com"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Placeholder (endpoints from RapidAPI page)",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}

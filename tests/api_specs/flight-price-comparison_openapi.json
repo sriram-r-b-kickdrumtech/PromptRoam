@@ -1,0 +1,24 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Flight price comparison",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://flight-price-comparison.p.rapidapi.com"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Placeholder (endpoints from RapidAPI page)",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}

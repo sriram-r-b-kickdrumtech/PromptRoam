@@ -1,0 +1,27 @@
+# Core
+langgraph>=0.2.0
+langchain-core>=0.3.0
+langchain-openai>=0.2.0
+streamlit>=1.40.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+
+# Supporting
+httpx>=0.27.0
+mcp>=1.0.0
+folium>=0.15.0
+fpdf2>=2.7.0
+redis>=5.0.0
+# RAG (Phase 7)
+chromadb>=0.4.0
+langchain-chroma>=0.1.0
+
+# Optional: Firecrawl (uncomment when integrating)
+# firecrawl-py>=0.0.16
+
+# Optional: Plotly (alternative to Folium)
+# plotly>=5.18.0
+
+# Dev / linting and tests
+ruff>=0.4.0
+pytest>=8.0.0

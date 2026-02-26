@@ -1,0 +1,50 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AeroDataBox",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://aerodatabox.p.rapidapi.com"
+    }
+  ],
+  "paths": {
+    "/flights/number/{flightNumber}/{dateFrom}/{dateTo}": {
+      "get": {
+        "summary": "Flight history/schedule by flight number. Date range max 7 days.",
+        "parameters": [
+          {
+            "name": "flightNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dateFrom",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dateTo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  }
+}

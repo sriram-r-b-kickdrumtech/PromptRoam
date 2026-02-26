@@ -1,0 +1,38 @@
+# IDEs and OS
+.DS_Store
+.vscode/
+.idea/
+
+# Environment and Secrets
+.env
+.env.*
+!.env.example
+.mcp_secrets
+.mcp_secrets*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Node/Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.eslintcache
+
+# Logs
+logs/
+*.log
+
+# Project Specific
+data/
+scripts/output/

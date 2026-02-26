@@ -1,0 +1,48 @@
+# Project Context: Autonomous Multi-Agent Travel Planning System
+You are an expert AI Architect and Senior Python Developer building a complex, production-grade autonomous travel orchestration system. [cite_start]Your primary goal is to build a resilient, dynamic, and Human-in-the-Loop (HITL) architecture utilizing advanced multi-agent design patterns[cite: 4]. 
+
+## 1. Tech Stack
+* [cite_start]**Orchestration Framework:** LangGraph (strictly preferred over CrewAI or AutoGen for exact precision, dynamic re-planning, and explicit routing)[cite: 21].
+* [cite_start]**Frontend/UI:** Streamlit[cite: 98].
+* [cite_start]**Data Validation & Typing:** Pydantic[cite: 75].
+* [cite_start]**Memory/Persistence:** LangGraph `MemorySaver` or `AsyncPostgresSaver`[cite: 89].
+* [cite_start]**Web Scraping:** Firecrawl[cite: 75].
+* [cite_start]**Mapping/Visualization:** Folium or Plotly[cite: 103].
+* [cite_start]**External Integration Gateway:** Model Context Protocol (MCP)[cite: 69].
+
+## 2. Core Architectural Patterns
+* [cite_start]**Plan-and-Execute Paradigm:** Strictly separate cognitive planning from mechanical execution[cite: 27]. [cite_start]Implement a Planner Agent to generate a Directed Acyclic Graph (DAG) of tasks, Executor Agents to process sub-tasks in parallel, and a Synthesizer Agent to aggregate outputs[cite: 28, 31, 32].
+* [cite_start]**Hierarchical Supervisor:** Implement a single Supervisor Agent as the central cognitive router[cite: 35]. [cite_start]The Supervisor MUST NOT possess tools to call external APIs; its sole mandate is constraint evaluation, delegation, and state management[cite: 35, 36].
+* [cite_start]**Sub-Agent Topology:** Implement dedicated agents for Transport, Accommodation, Experience, and Financial operations [cite: 39-42].
+* **Dynamic Workflow (DyFlow):** Implement localized replanning using "any-start-time" safe interval path planning. [cite_start]Fork the LangGraph state at the exact checkpoint preceding a disrupted leg rather than replanning the entire trip from scratch[cite: 45].
+
+## 3. State Management
+* [cite_start]Use LangGraph's `TypedDict` as the universal memory bank[cite: 50].
+* [cite_start]Strictly separate requested constraints from computed results[cite: 50]. 
+* [cite_start]The graph state MUST track: User Profile & Context, Hard Constraints, Requested Trips (using UUIDs), Validated Plans (keyed by UUIDs), and Message History [cite: 52-57].
+
+## 4. Knowledge Engineering & RAG
+* [cite_start]**NO Fixed-Size Chunking:** Abandon naive fixed-size text chunking[cite: 14]. [cite_start]Transform unstructured data into highly structured "Knowledge Objects" formatted as JSON-LD (conforming to Schema.org types like `TouristTrip` or `Hotel`)[cite: 60].
+* **NO Pure Reciprocal Rank Fusion (RRF):** Do not merge results based solely on ordinal rank. [cite_start]Implement a threshold-gated reranking pipeline that retains absolute confidence scores[cite: 9, 10].
+* [cite_start]**Metadata Filtering:** Dynamically extract metadata filters from user prompts to narrow the search space *before* applying vector similarity[cite: 62].
+* [cite_start]**HyDE & HyPE:** Utilize Hypothetical Document Embeddings (HyDE) to bridge semantic gaps for vague queries, and Hypothetical Prompt Embeddings (HyPE) during the data ingestion phase[cite: 65, 66].
+
+## 5. Tool & API Execution
+* [cite_start]**Live Verification:** All travel suggestions must be verifiable with live pricing and direct booking links; no hallucinated inventory is permitted[cite: 68, 69].
+* [cite_start]**Approved APIs:**[cite: 72]
+    * Flights: Amadeus Travel API or Skyscanner
+    * Accommodation: Expedia Rapid API
+    * Routing: Kiwi.com (Tequila)
+    * Weather: OpenWeatherMap or Tomorrow.io
+* [cite_start]**Algorithmic Delegation:** DO NOT rely on the LLM for complex mathematical operations or spatial routing[cite: 78, 79]. [cite_start]Delegate spatial mapping to heuristic algorithms solving the Traveling Salesman Problem (TSP) with hard time windows[cite: 80]. [cite_start]Delegate budget constraint solving to deterministic functions (Knapsack Problem style)[cite: 81, 82].
+* [cite_start]**Unstructured Data:** Use Firecrawl for scraping community forums, processed through Pydantic models to generate `HiddenGems` objects[cite: 75, 76].
+
+## 6. Human-in-the-Loop (HITL) & Governance
+* [cite_start]Implement mandatory human approval checkpoints at key stages (shortlisting, budget allocation, final booking) using LangGraph's native `interrupt()` function[cite: 85, 87, 88].
+* [cite_start]Yield a JSON-serializable payload during the interrupt and provide the user with three options: Approve, Edit, or Reject[cite: 90, 91].
+* [cite_start]Implement Corrective RAG (CRAG) methodologies for self-correction pipelines, and utilize output guardrails to intercept the final JSON payload to prevent PII leakage and verify budget adherence[cite: 95].
+
+## 7. Presentation Layer (Streamlit)
+* [cite_start]Use `StreamlitCallbackHandler` to stream the agent's real-time, token-by-token reasoning logs and node transitions directly into the UI[cite: 100].
+* [cite_start]Parse the final itinerary into actionable UI blocks with live direct booking URLs and real-time pricing grids[cite: 105, 106].
+* [cite_start]Include automated document generation (e.g., Python's FPDF or JSON serialization) for easy offline downloading of the finalized trip[cite: 107].

@@ -1,0 +1,34 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Tripadvisor Data",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://tripadvisor-data.p.rapidapi.com"
+    }
+  ],
+  "paths": {
+    "/location-details": {
+      "get": {
+        "summary": "Location details by ID",
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  }
+}

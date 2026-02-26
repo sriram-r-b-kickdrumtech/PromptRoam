@@ -1,0 +1,120 @@
+{
+  "_comment": "Registry of all APIs used by PromptRoam. Docs from official sources; used by local MCP server to call HTTP endpoints.",
+  "apis": [
+    {
+      "id": "aerodatabox",
+      "name": "AeroDataBox",
+      "category": "flights",
+      "base_url": "https://aerodatabox.p.rapidapi.com",
+      "auth": "rapidapi",
+      "docs_url": "https://doc.aerodatabox.com/rapidapi.html",
+      "endpoints": [
+        {
+          "id": "flights_by_number",
+          "path": "/flights/number/{flightNumber}/{dateFrom}/{dateTo}",
+          "method": "GET",
+          "params_path": ["flightNumber", "dateFrom", "dateTo"],
+          "params_query": [],
+          "description": "Flight history/schedule by flight number. Date range max 7 days."
+        }
+      ]
+    },
+    {
+      "id": "multi-site-flight-search",
+      "name": "Multi Site Flight Search",
+      "category": "flights",
+      "base_url": "https://multi-site-flight-search.p.rapidapi.com",
+      "auth": "rapidapi",
+      "docs_url": "https://rapidapi.com/airlineconsolidator/api/multi-site-flight-search",
+      "endpoints": []
+    },
+    {
+      "id": "flight-price-comparison",
+      "name": "Flight price comparison",
+      "category": "flights",
+      "base_url": "https://flight-price-comparison.p.rapidapi.com",
+      "auth": "rapidapi",
+      "docs_url": "https://rapidapi.com/hub",
+      "endpoints": []
+    },
+    {
+      "id": "hotel-api6",
+      "name": "Hotel API",
+      "category": "hotels",
+      "base_url": "https://hotel-api6.p.rapidapi.com",
+      "auth": "rapidapi",
+      "docs_url": "https://rapidapi.com/manthankool/api/hotel-api6",
+      "endpoints": []
+    },
+    {
+      "id": "expedia13",
+      "name": "Expedia",
+      "category": "hotels",
+      "base_url": "https://expedia13.p.rapidapi.com",
+      "auth": "rapidapi",
+      "docs_url": "https://rapidapi.com/hub",
+      "endpoints": []
+    },
+    {
+      "id": "booking-search",
+      "name": "Booking Search",
+      "category": "hotels",
+      "base_url": "https://booking-search.p.rapidapi.com",
+      "auth": "rapidapi",
+      "docs_url": "https://rapidapi.com/hub",
+      "endpoints": []
+    },
+    {
+      "id": "tripadvisor-scraper",
+      "name": "Tripadvisor Scraper",
+      "category": "activities",
+      "base_url": "https://tripadvisor-scraper.p.rapidapi.com",
+      "auth": "rapidapi",
+      "docs_url": "https://rapidapi.com/hub",
+      "endpoints": []
+    },
+    {
+      "id": "tripadvisor-data",
+      "name": "Tripadvisor Data",
+      "category": "activities",
+      "base_url": "https://tripadvisor-data.p.rapidapi.com",
+      "auth": "rapidapi",
+      "docs_url": "https://tripadvisor-content-api.readme.io/reference",
+      "endpoints": [
+        {
+          "id": "location_details",
+          "path": "/location-details",
+          "method": "GET",
+          "params_path": [],
+          "params_query": ["location_id"],
+          "description": "Location details by ID"
+        }
+      ]
+    },
+    {
+      "id": "openweathermap",
+      "name": "OpenWeatherMap",
+      "category": "weather",
+      "base_url": "https://api.openweathermap.org/data/2.5",
+      "auth": "query",
+      "auth_param": "appid",
+      "env_key": "OPENWEATHERMAP_API_KEY",
+      "docs_url": "https://openweathermap.org/current",
+      "endpoints": [
+        {
+          "id": "current_weather",
+          "path": "/weather",
+          "method": "GET",
+          "params_query": ["q", "lat", "lon", "appid", "units", "lang"],
+          "description": "Current weather by city (q) or lat/lon. appid=API key, units=metric|imperial"
+        }
+      ]
+    }
+  ],
+  "tool_to_apis": {
+    "search_flights": ["aerodatabox", "multi-site-flight-search", "flight-price-comparison"],
+    "search_hotels": ["hotel-api6", "expedia13", "booking-search"],
+    "search_activities": ["tripadvisor-scraper", "tripadvisor-data"],
+    "get_weather": ["openweathermap"]
+  }
+}
