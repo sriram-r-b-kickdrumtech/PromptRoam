@@ -8,8 +8,10 @@ export const getStatus = async (threadId: string): Promise<any> => {
   return res.data;
 };
 
-export const startTrip = async (threadId: string, message: string): Promise<any> => {
-  const res = await axios.post(`${API_BASE}/chat`, { thread_id: threadId, message });
+export const startTrip = async (threadId: string | null, message: string): Promise<any> => {
+  const payload: any = { message };
+  if (threadId) payload.thread_id = threadId;
+  const res = await axios.post(`${API_BASE}/chat`, payload);
   return res.data;
 };
 

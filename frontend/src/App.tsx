@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { AppStep, WorkflowStatus } from './types';
-import { startTrip, submitClarification, submitApproval } from './api/trips';
+import { startTrip, submitClarification, submitApproval, getStatus } from './api/trips';
 import TripForm from './pages/TripForm';
 import Clarification from './pages/Clarification';
 import StatusPolling from './pages/StatusPolling';
@@ -17,10 +17,35 @@ export default function App() {
 
   const generateThreadId = () => `sess-${Math.random().toString(36).substring(2, 9)}`;
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tid = params.get('thread_id') || localStorage.getItem('thread_id') || '';
+    if (tid) {
+      setThreadId(tid);
+      syncThreadIdToUrl(tid);
+      // try to restore status on refresh
+      getStatus(tid)
+        .then((res) => {
+          setStatus(res);
+          updateStepFromStatus(res);
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  const syncThreadIdToUrl = (tid: string) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('thread_id', tid);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+    localStorage.setItem('thread_id', tid);
+  };
+
   const handleStart = async (msg: string) => {
     try {
-      const tid = generateThreadId();
+      const tid = threadId || generateThreadId();
       setThreadId(tid);
+      syncThreadIdToUrl(tid);
       setAppStep('researching');
       
       const res = await startTrip(tid, msg);
@@ -75,11 +100,16 @@ export default function App() {
 
   const updateStepFromStatus = (s: WorkflowStatus) => {
     if (s.step === 'complete') {
-        setAppStep('complete');
-    } else if (s.step === 'approving' || s.interrupt_pending) {
-        setAppStep('approving');
-    } else if (s.step === 'awaiting_clarification' || s.awaiting_clarification) {
-        setAppStep('clarifying');
+      setAppStep('complete');
+      return;
+    }
+    if (s.step === 'approving' || s.interrupt_pending || (s.executor_results && s.executor_results.length > 0)) {
+      setAppStep('approving');
+      return;
+    }
+    if (s.step === 'awaiting_clarification' || s.awaiting_clarification) {
+      setAppStep('clarifying');
+      return;
     }
   };
 
@@ -87,6 +117,11 @@ export default function App() {
     setAppStep('form');
     setThreadId('');
     setStatus(null);
+    setError('');
+  };
+
+  const goEdit = () => {
+    setAppStep('form');
     setError('');
   };
 
@@ -136,7 +171,7 @@ export default function App() {
           )}
           
           {appStep === 'approving' && status && (
-            <Approval status={status} onApprove={() => handleApprovalAction('approve')} onReject={() => handleApprovalAction('reject')} />
+            <Approval status={status} onApprove={() => handleApprovalAction('approve')} onEdit={goEdit} />
           )}
           
           {appStep === 'complete' && status && (

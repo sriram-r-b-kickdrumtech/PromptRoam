@@ -5,18 +5,18 @@ import { Check, X, Plane, Activity, CreditCard, AlertTriangle } from 'lucide-rea
 interface Props {
   status: WorkflowStatus;
   onApprove: () => void;
-  onReject: () => void;
+  onEdit: () => void;
 }
 
-export default function Approval({ status, onApprove, onReject }: Props) {
+export default function Approval({ status, onApprove, onEdit }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const trip = status.requested_trips?.[0] as TripLeg | undefined;
   const results = status.executor_results || [];
 
-  const handleAction = (action: 'approve' | 'reject') => {
+  const handleAction = (action: 'approve' | 'edit') => {
     setIsSubmitting(true);
     if (action === 'approve') onApprove();
-    else onReject();
+    else onEdit();
   };
 
   const getResult = (agent: string) => results.find((r: ExecutorResult) => r.agent === agent)?.result;
@@ -53,11 +53,11 @@ export default function Approval({ status, onApprove, onReject }: Props) {
           </div>
           <div className="flex gap-3 shrink-0">
             <button
-              onClick={() => handleAction('reject')}
+              onClick={() => handleAction('edit')}
               disabled={isSubmitting}
               className="px-5 py-2.5 text-zinc-300 bg-zinc-900 border border-zinc-700 rounded-xl hover:bg-zinc-800 hover:text-white flex items-center gap-2 font-bold transition-all disabled:opacity-50"
             >
-              <X size={18} strokeWidth={2.5} /> Reject
+              <X size={18} strokeWidth={2.5} /> Edit
             </button>
             <button
               onClick={() => handleAction('approve')}

@@ -8,6 +8,9 @@ export interface Message {
 export interface ClarificationQuestion {
   id: string;
   question: string;
+  type?: 'text' | 'number' | 'date' | 'date_range' | 'multi_select';
+  options?: string[];
+  duration_days?: number;
 }
 
 export interface ExecutorResult {

@@ -304,6 +304,12 @@ else:
     if "thread_id" not in st.session_state:
         _reset_session_for_new_thread(_new_thread_id())
     st.query_params["thread_id"] = st.session_state.thread_id
+    # Backward compat: ensure URL updates even on older Streamlit versions
+    if hasattr(st, "experimental_set_query_params"):
+        try:
+            st.experimental_set_query_params(thread_id=st.session_state.thread_id)
+        except Exception:
+            pass
 
 with st.sidebar:
     st.header("Session")

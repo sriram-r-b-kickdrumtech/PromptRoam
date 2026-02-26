@@ -200,3 +200,77 @@ def llm_fallback_activities(location: str, interests: list[str] | None = None) -
     except Exception:
         pass
     return {"activities": [{"id": "A1", "name": f"Things to do in {location}", "location": location, "stub": True}]}
+
+
+def llm_fallback_trains(origin: str, dest: str, date: str) -> dict[str, Any]:
+    system_prompt = (
+        "You are a travel data assistant. Return ONLY valid JSON.\n"
+        "Schema:\n"
+        "{\n"
+        '  "trains": [\n'
+        '    {\n'
+        '      "name": "string",\n'
+        '      "origin": "string",\n'
+        '      "dest": "string",\n'
+        '      "departure": "string",\n'
+        '      "arrival": "string",\n'
+        '      "price_estimate": number,\n'
+        '      "currency": "INR",\n'
+        '      "source_api": "llm_fallback",\n'
+        '      "stub": true,\n'
+        '      "search_urls": ["string"]\n'
+        "    }\n"
+        "  ]\n"
+        "}\n"
+        "Rules:\n"
+        "- Provide 2-4 options.\n"
+    )
+    user_prompt = f"Origin: {origin}; Destination: {dest}; Date: {date}"
+    payload = call_llm_json(system_prompt, user_prompt, "llm_fallback_trains")
+    trains = _safe_list(payload.get("trains"))
+    if trains:
+        q = f"{origin} to {dest} train {date}"
+        urls = [
+            f"https://www.irctc.co.in/nget/train-search",
+            f"https://www.google.com/search?q={quote_plus(q)}",
+        ]
+        trains = _sanitize_urls(trains, query_key="name", search_urls=urls)
+        return {"trains": trains, "source": "llm_fallback"}
+    return {"trains": [{"name": "Train option", "origin": origin, "dest": dest, "stub": True}]}
+
+
+def llm_fallback_bus(origin: str, dest: str, date: str) -> dict[str, Any]:
+    system_prompt = (
+        "You are a travel data assistant. Return ONLY valid JSON.\n"
+        "Schema:\n"
+        "{\n"
+        '  "buses": [\n'
+        '    {\n'
+        '      "name": "string",\n'
+        '      "origin": "string",\n'
+        '      "dest": "string",\n'
+        '      "departure": "string",\n'
+        '      "arrival": "string",\n'
+        '      "price_estimate": number,\n'
+        '      "currency": "INR",\n'
+        '      "source_api": "llm_fallback",\n'
+        '      "stub": true,\n'
+        '      "search_urls": ["string"]\n'
+        "    }\n"
+        "  ]\n"
+        "}\n"
+        "Rules:\n"
+        "- Provide 2-4 options.\n"
+    )
+    user_prompt = f"Origin: {origin}; Destination: {dest}; Date: {date}"
+    payload = call_llm_json(system_prompt, user_prompt, "llm_fallback_bus")
+    buses = _safe_list(payload.get("buses"))
+    if buses:
+        q = f"{origin} to {dest} bus {date}"
+        urls = [
+            f"https://www.redbus.in/",
+            f"https://www.google.com/search?q={quote_plus(q)}",
+        ]
+        buses = _sanitize_urls(buses, query_key="name", search_urls=urls)
+        return {"buses": buses, "source": "llm_fallback"}
+    return {"buses": [{"name": "Bus option", "origin": origin, "dest": dest, "stub": True}]}

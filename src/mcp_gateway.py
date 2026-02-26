@@ -210,7 +210,28 @@ def _call_mcp_tool_async(
         return None
 
     try:
-        return asyncio.run(_run())
+        try:
+            asyncio.get_running_loop()
+            running = True
+        except RuntimeError:
+            running = False
+        if not running:
+            return asyncio.run(_run())
+
+        # If we're already in an event loop (e.g. FastAPI), run in a new thread.
+        import threading
+        result_holder: dict[str, Any | None] = {"result": None}
+
+        def _thread_target():
+            try:
+                result_holder["result"] = asyncio.run(_run())
+            except Exception:
+                result_holder["result"] = None
+
+        t = threading.Thread(target=_thread_target, daemon=True)
+        t.start()
+        t.join()
+        return result_holder["result"]
     except Exception as e:
         log.info("[MCP] asyncio.run failed: %s", e)
         return None

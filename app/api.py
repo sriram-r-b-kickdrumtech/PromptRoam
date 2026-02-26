@@ -45,6 +45,7 @@ class ActionRequest(BaseModel):
 
 class StateResponse(BaseModel):
     thread_id: str
+    step: str
     messages: list[Any]
     interrupt_pending: bool
     awaiting_clarification: bool
@@ -93,8 +94,20 @@ def _call_local_mcp_tool(tool_name: str, arguments: dict[str, Any]) -> dict[str,
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 def _build_response(thread_id: str, state: dict, interrupt_pending: bool) -> StateResponse:
+    step = "researching"
+    if state.get("awaiting_clarification"):
+        step = "awaiting_clarification"
+    elif interrupt_pending:
+        step = "approving"
+    elif state.get("executor_results"):
+        step = "approving"
+    if state.get("message_history"):
+        # If assistant message exists and no interrupt, mark complete
+        if not interrupt_pending and any(m.get("role") == "assistant" for m in state.get("message_history") or []):
+            step = "complete"
     return StateResponse(
         thread_id=thread_id,
+        step=step,
         messages=state.get("message_history", []),
         interrupt_pending=interrupt_pending,
         awaiting_clarification=state.get("awaiting_clarification", False),
@@ -151,6 +164,7 @@ async def new_thread():
 async def get_state(thread_id: str):
     graph = get_graph(use_interrupt=False)
     config = config_for_thread(thread_id)
+    config["recursion_limit"] = 4
     try:
         snap = graph.get_state(config)
         state_value = snap.values if hasattr(snap, "values") else {}
@@ -234,6 +248,7 @@ async def mcp_call(req: McpCallRequest):
 async def clarify(req: ClarificationRequest):
     graph = get_graph(use_interrupt=False)
     config = config_for_thread(req.thread_id)
+    config["recursion_limit"] = 4
     
     snap = graph.get_state(config)
     state_value = snap.values if hasattr(snap, "values") else {}
@@ -269,6 +284,7 @@ async def clarify(req: ClarificationRequest):
 async def action(req: ActionRequest):
     graph = get_graph(use_interrupt=False)
     config = config_for_thread(req.thread_id)
+    config["recursion_limit"] = 4
     if req.action not in ("approve", "reject"):
         raise HTTPException(status_code=400, detail="action must be approve or reject")
     

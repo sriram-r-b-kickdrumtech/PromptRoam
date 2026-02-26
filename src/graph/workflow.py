@@ -48,6 +48,13 @@ def route_after_supervisor(state: GraphState) -> str:
     return next_node or "planner"
 
 
+def route_after_planner(state: GraphState) -> str:
+    """After planner, either wait for clarifications or execute."""
+    if state.get("awaiting_clarification"):
+        return "end"
+    return "execute_all"
+
+
 def build_graph(interrupt_before: tuple[str, ...] | None = ("synthesizer",)):
     """Build graph with single entry = Supervisor; compile with checkpointer. Optionally HITL interrupt before nodes."""
     log.info("[WORKFLOW] building graph interrupt_before=%s", interrupt_before)
@@ -77,8 +84,15 @@ def build_graph(interrupt_before: tuple[str, ...] | None = ("synthesizer",)):
         },
     )
 
-    builder.add_edge("planner", "supervisor")
-    builder.add_edge("execute_all", "supervisor")
+    builder.add_conditional_edges(
+        "planner",
+        route_after_planner,
+        {
+            "execute_all": "execute_all",
+            "end": END,
+        },
+    )
+    builder.add_edge("execute_all", END)
     builder.add_edge("htil", END)
     builder.add_edge("synthesizer", END)
 

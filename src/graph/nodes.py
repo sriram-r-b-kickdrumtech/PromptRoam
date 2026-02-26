@@ -236,7 +236,11 @@ def supervisor_node(state: GraphState) -> dict:
 
     # Deterministic routing to reduce latency
     if last_is_human and "Clarifications:" in (last_content or ""):
-        next_node = "planner"
+        # If we already have a task_dag, continue to execution; otherwise re-plan once.
+        if state.get("task_dag"):
+            next_node = "execute_all"
+        else:
+            next_node = "planner"
         awaiting_clarification = False
     elif awaiting_clarification:
         next_node = "htil"
@@ -412,22 +416,36 @@ INSTRUCTIONS:
         trip_summary = raw_summary or f"Trip: {last_user[:80]}"
     raw_reasoning = llm_result.get("plan_reasoning")
     plan_reasoning = raw_reasoning if isinstance(raw_reasoning, str) else json.dumps(raw_reasoning or "", default=str)
+
+    # If this is a clarification pass, keep existing summary/reasoning when possible
+    if last_user.lower().startswith("clarifications:"):
+        existing_trips = list(state.get("requested_trips") or [])
+        if existing_trips:
+            trip_summary = existing_trips[0].get("summary", trip_summary)
+            plan_reasoning = existing_trips[0].get("plan_reasoning", plan_reasoning)
     log.info("[PLANNER] trip_summary: %s", trip_summary)
     log.info("[PLANNER] plan_reasoning: %s", plan_reasoning[:500])
 
     leg_id = str(uuid_mod.uuid4())
-    updates: dict = {
-        "hard_constraints": hard,
-        "user_profile_and_context": profile,
-        "requested_trips": [
-            {
-                "id": leg_id,
-                "summary": trip_summary,
-                "plan_reasoning": plan_reasoning,
-                "status": "planned",
-            }
-        ],
-    }
+    if last_user.lower().startswith("clarifications:") and state.get("requested_trips"):
+        updates: dict = {
+            "hard_constraints": hard,
+            "user_profile_and_context": profile,
+            "requested_trips": state.get("requested_trips"),
+        }
+    else:
+        updates = {
+            "hard_constraints": hard,
+            "user_profile_and_context": profile,
+            "requested_trips": [
+                {
+                    "id": leg_id,
+                    "summary": trip_summary,
+                    "plan_reasoning": plan_reasoning,
+                    "status": "planned",
+                }
+            ],
+        }
 
     missing = []
     if not (hard.get("origin") or profile.get("origin")):
@@ -437,7 +455,12 @@ INSTRUCTIONS:
     if not hard.get("travel_date") and not hard.get("duration_days"):
         missing.append({"id": "dates", "question": "When are you traveling? Select a date range.", "type": "date_range"})
     elif not hard.get("travel_date") and hard.get("duration_days"):
-        missing.append({"id": "start_date", "question": f"What is your start date? (Trip is {hard.get('duration_days')} days)", "type": "date"})
+        missing.append({
+            "id": "dates",
+            "question": f"Select your travel date range (Trip is {hard.get('duration_days')} days).",
+            "type": "date_range",
+            "duration_days": hard.get("duration_days"),
+        })
     if not hard.get("max_budget"):
         missing.append({"id": "budget", "question": "What is your total budget?", "type": "number"})
     interests = profile.get("interests") or []
@@ -454,16 +477,19 @@ INSTRUCTIONS:
     if missing:
         updates["awaiting_clarification"] = True
         updates["clarification_questions"] = missing
-        updates["task_dag"] = []
+        # Only clear DAG if it doesn't already exist
+        if not state.get("task_dag"):
+            updates["task_dag"] = []
     else:
         updates["awaiting_clarification"] = False
         updates["clarification_questions"] = []
-        updates["task_dag"] = [
-            {"id": "t1", "agent": "transport", "dependencies": [], "status": "pending"},
-            {"id": "t2", "agent": "accommodation", "dependencies": [], "status": "pending"},
-            {"id": "t3", "agent": "experience", "dependencies": [], "status": "pending"},
-            {"id": "t4", "agent": "financial", "dependencies": ["t1", "t2", "t3"], "status": "pending"},
-        ]
+        if not state.get("task_dag"):
+            updates["task_dag"] = [
+                {"id": "t1", "agent": "transport", "dependencies": [], "status": "pending"},
+                {"id": "t2", "agent": "accommodation", "dependencies": [], "status": "pending"},
+                {"id": "t3", "agent": "experience", "dependencies": [], "status": "pending"},
+                {"id": "t4", "agent": "financial", "dependencies": ["t1", "t2", "t3"], "status": "pending"},
+            ]
     
     # Always reset is_clarification when planner is called (new user input)
     updates["is_clarification"] = False
@@ -491,6 +517,13 @@ def execute_all_node(state: GraphState) -> dict:
     out = list(state.get("executor_results") or [])
     hard = state.get("hard_constraints") or {}
     profile = state.get("user_profile_and_context") or {}
+    preferred_transport = profile.get("preferred_transport")
+    transport_modes = []
+    if preferred_transport:
+        if isinstance(preferred_transport, list):
+            transport_modes = [str(x).strip().lower() for x in preferred_transport if str(x).strip()]
+        else:
+            transport_modes = [s.strip().lower() for s in str(preferred_transport).split(",") if s.strip()]
     
     # Strictly use what is in state
     origin = (profile.get("origin") or hard.get("origin") or "").strip()
@@ -504,8 +537,28 @@ def execute_all_node(state: GraphState) -> dict:
     travel_date = str(hard.get("travel_date") or "")
     if not travel_date or not travel_date.startswith("202"):
         travel_date = "2025-04-15"
-    log.info("[EXECUTE_ALL] transport: origin=%s dest=%s date=%s", origin, destination, travel_date)
-    out.append({"agent": "transport", "task_id": "t1", "result": _search_flights_via_mcp(origin, destination, travel_date)})
+    if transport_modes:
+        transport_result: dict = {"mode": transport_modes}
+        if "flight" in transport_modes:
+            log.info("[EXECUTE_ALL] transport: origin=%s dest=%s date=%s", origin, destination, travel_date)
+            transport_result.update(_search_flights_via_mcp(origin, destination, travel_date))
+        if "train" in transport_modes:
+            try:
+                from src.services.llm_fallbacks import llm_fallback_trains
+                transport_result.update(llm_fallback_trains(origin, destination, travel_date))
+            except Exception:
+                pass
+        if "bus" in transport_modes:
+            try:
+                from src.services.llm_fallbacks import llm_fallback_bus
+                transport_result.update(llm_fallback_bus(origin, destination, travel_date))
+            except Exception:
+                pass
+        if "drive" in transport_modes:
+            transport_result["note"] = "Drive selected; route planning not yet implemented."
+        out.append({"agent": "transport", "task_id": "t1", "result": transport_result})
+    else:
+        out.append({"agent": "transport", "task_id": "t1", "result": {"note": "No transport preference provided; transport search skipped."}})
     log.info("[EXECUTE_ALL] accommodation: location=%s budget=%s", destination, hard.get("max_budget"))
     out.append({"agent": "accommodation", "task_id": "t2", "result": _search_hotels_via_mcp(destination, hard.get("max_budget"))})
     rag_ctx: list = []
